@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1020320193869",
+    "project_id": "luwasa-ae518",
+    "storage_bucket": "luwasa-ae518.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1020320193869:android:6110f605436144e0a32b04",
+        "android_client_info": {
+          "package_name": "com.example.alert_system"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLbPLIe3qzWTAUSKpzuj81NU0kWAF8wpA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
