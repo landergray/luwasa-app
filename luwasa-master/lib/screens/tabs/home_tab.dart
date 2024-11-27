@@ -234,97 +234,154 @@ class HomeTab extends StatelessWidget {
 
   // Pay Now Button
   Widget _payNowButton(BuildContext context, String id, double amount) {
-    return TouchableOpacity(
-      onTap: () => initiatePayment(context, id, amount),
-      child: Column(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              color: Colors.green,
-              shape: BoxShape.circle,
+  return TouchableOpacity(
+    onTap: () {
+      // Show dialog informing the user about the redirection
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Redirecting to Paymongo'),
+            content: const Text(
+              'You are about to be redirected to Paymongo for payment processing. Please complete the payment there.',
             ),
-            child: const Padding(
-              padding: EdgeInsets.all(10.0),
-              child: Icon(Icons.payment, size: 35, color: Colors.white),
-            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close the dialog
+                  initiatePayment(context, id, amount); // Proceed with payment
+                },
+                child: const Text('Proceed'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close the dialog without proceeding
+                },
+                child: const Text('Cancel'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+    child: Column(
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            color: Colors.green,
+            shape: BoxShape.circle,
           ),
-          const SizedBox(height: 5),
-          TextWidget(
-            text: 'Pay now',
-            fontSize: 12,
-            color: Colors.grey,
+          child: const Padding(
+            padding: EdgeInsets.all(10.0),
+            child: Icon(Icons.payment, size: 35, color: Colors.white),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+        const SizedBox(height: 5),
+        TextWidget(
+          text: 'Pay Gcash',
+          fontSize: 12,
+          color: Colors.grey,
+        ),
+      ],
+    ),
+  );
+}
+
 
   // Payment Integration with PayMongo
   void initiatePayment(BuildContext context, String id, double amount) async {
-    const String paymongoPublicKey = 'pk_test_s5LVDMHS9hKR4Rbx9FFpNMiN';
-    const String paymongoSecretKey = 'sk_test_kc5c7FA3yPbEMXdj2TK8uQ1r';
+  const String paymongoPublicKey = 'pk_test_s5LVDMHS9hKR4Rbx9FFpNMiN';
+  const String paymongoSecretKey = 'sk_test_kc5c7FA3yPbEMXdj2TK8uQ1r';
+  
+  try {
+    // Create payment intent (initial API call)
+    var headers = {
+      'Authorization': 'Basic ${base64Encode(utf8.encode('$paymongoSecretKey:'))}',
+      'Content-Type': 'application/json'
+    };
     
-    try {
-      // Create payment intent (initial API call)
-      var headers = {
-        'Authorization': 'Basic ${base64Encode(utf8.encode('$paymongoSecretKey:'))}',
-        'Content-Type': 'application/json'
-      };
-      
-      var body = jsonEncode({
-        "data": {
-          "attributes": {
-            "amount": (amount * 100).toInt(), // Convert to centavos
-            "payment_method_allowed": ["card", "gcash", "paymaya"],
-            "payment_method_options": {"card": {"request_three_d_secure": "any"}},
-            "currency": "PHP",
-          }
+    var body = jsonEncode({
+      "data": {
+        "attributes": {
+          "amount": (amount * 100).toInt(), // Convert to centavos
+          "payment_method_allowed": ["card", "gcash", "paymaya"],
+          "payment_method_options": {"card": {"request_three_d_secure": "any"}},
+          "currency": "PHP",
         }
-      });
+      }
+    });
 
-      var response = await http.post(
-        Uri.parse('https://api.paymongo.com/v1/payment_intents'),
-        headers: headers,
-        body: body,
-      );
+    var response = await http.post(
+      Uri.parse('https://api.paymongo.com/v1/payment_intents'),
+      headers: headers,
+      body: body,
+    );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        var jsonResponse = json.decode(response.body);
-        var paymentIntentId = jsonResponse['data']['id'];
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      var jsonResponse = json.decode(response.body);
+      var paymentIntentId = jsonResponse['data']['id'];
 
+      // Fetch the checkout URL from Firestore based on user's payment record
+      String checkoutUrl = await _getCheckoutUrlFromFirestore(id);
+
+      if (checkoutUrl.isNotEmpty) {
         // Redirect user to payment gateway
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Redirecting to payment gateway for ₱$amount')),
         );
 
         // Call a function to attach payment method (e.g., show payment page)
-        attachPaymentMethod(context, paymentIntentId, paymongoPublicKey);
+        attachPaymentMethod(context, checkoutUrl);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create payment intent')),
+          SnackBar(content: Text('Checkout URL not found')),
         );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    }
-  }
-
-  // Attach payment method (open PayMongo checkout URL)
-  Future<void> attachPaymentMethod(
-      BuildContext context, String paymentIntentId, String publicKey) async {
-    final checkoutUrl = 'https://pm.link/org-H9VAYFBZGUL8z5bumXVpbt3b/test/2TAmf7M';
-
-    // Attempt to launch the URL
-    if (await canLaunch(checkoutUrl)) {
-      await launch(checkoutUrl);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open payment page')),
+        SnackBar(content: Text('Failed to create payment intent')),
       );
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error: $e')),
+    );
   }
+}
+
+Future<String> _getCheckoutUrlFromFirestore(String paymentId) async {
+  try {
+    // Query the Payments collection to get the 'curl' field for the given paymentId
+    DocumentSnapshot paymentDoc = await FirebaseFirestore.instance
+        .collection('Payments')
+        .doc(paymentId)
+        .get();
+    
+    if (paymentDoc.exists) {
+      // Get the 'curl' field (assuming 'curl' is the field name in the Firestore document)
+      return paymentDoc['curl'] ?? '';
+    } else {
+      return '';
+    }
+  } catch (e) {
+    return '';
+  }
+}
+
+
+  // Attach payment method (open PayMongo checkout URL)
+  // Attach payment method (open PayMongo checkout URL)
+Future<void> attachPaymentMethod(
+    BuildContext context, String checkoutUrl) async {
+  // Attempt to launch the URL
+  if (await canLaunch(checkoutUrl)) {
+    await launch(checkoutUrl);
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Could not open payment page')),
+    );
+  }
+}
 }
 
 // Chart Data Class
