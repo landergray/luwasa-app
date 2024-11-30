@@ -283,10 +283,18 @@ Widget _billingDetailsWithNoData() {
   }
 
   // Merged Water Used List and Last Transaction Card
-  Widget _buildWaterUsed() {
+Widget _buildWaterUsed() {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    return const Center(child: Text('No user logged in'));
+  }
+  
+  final userId = user.uid; // Get the current user's UID
+
   return StreamBuilder(
     stream: FirebaseFirestore.instance
         .collection('Payments')
+        .where('uid', isEqualTo: userId) // Filter by user ID
         .orderBy('date', descending: true)
         .snapshots(),
     builder: (context, snapshot) {
@@ -302,165 +310,145 @@ Widget _billingDetailsWithNoData() {
         return const Center(child: Text('No data found.'));
       }
 
-      return Column(
-        children: [
-          const SizedBox(height: 20),
-          // Water Used List
-          ListView.builder(
-            shrinkWrap: true, // Prevents the list from taking too much space
-            physics: const NeverScrollableScrollPhysics(), // Disable scrolling in this section
-            itemCount: data.docs.length,
-            itemBuilder: (context, index) {
-              final reading = data.docs[index];
-              final currentReading = reading['currentReading'];
-              final previousReading = reading['previousReading'];
-              final date = reading['date']; // Assuming 'date' is a Timestamp field
-              final isPaid = reading['isPaid']; // Retrieve the isPaid field
+      // Fetch the most recent reading
+      final latestReading = data.docs.first;
+      final currentReading = latestReading['currentReading'];
+      final previousReading = latestReading['previousReading'];
+      final date = latestReading['date']; // Assuming 'date' is a Timestamp field
+      final isPaid = latestReading['isPaid'];
 
-              // Safely cast the values to double
-              final double currentReadingValue = (currentReading is int)
-                  ? currentReading.toDouble()
-                  : currentReading as double? ?? 0.0;
-              final double previousReadingValue = (previousReading is int)
-                  ? previousReading.toDouble()
-                  : previousReading as double? ?? 0.0;
+      // Safely cast the values to double
+      final double currentReadingValue = (currentReading is int)
+          ? currentReading.toDouble()
+          : currentReading as double? ?? 0.0;
+      final double previousReadingValue = (previousReading is int)
+          ? previousReading.toDouble()
+          : previousReading as double? ?? 0.0;
 
-              final waterUsed = currentReadingValue - previousReadingValue;
+      final waterUsed = currentReadingValue - previousReadingValue;
 
-              // Convert 'date' to DateTime and extract month & year
-              DateTime dateTime = date.toDate();
-              String monthYear = DateFormat('MMMM yyyy').format(dateTime);
+      // Convert 'date' to DateTime and extract month & year
+      DateTime dateTime = date.toDate();
+      String monthYear = DateFormat('MMMM yyyy').format(dateTime);
 
-              // Conditional message based on isPaid field
-              String lastTransactionMessage = isPaid
-                  ? 'Payment to LUWASA Inc.\nAmount: ₱${(reading['amount'] as num).toDouble().toStringAsFixed(2)}'
-                  : 'No Transaction Found.';
-
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 5.0),
-                child: Card(
-                  elevation: 2,
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 10),
-                      ListTile(
-                        title: TextWidget(
-                          text: 'Reading Month: $monthYear',
-                          fontSize: 15,
-                          fontFamily: 'Medium',
-                        ),
-                        subtitle: TextWidget(
-                          text: 'Total Reading: ${waterUsed.toStringAsFixed(2)}m³\n'
-                              'Current: ${currentReadingValue.toStringAsFixed(2)}m³, '
-                              'Previous: ${previousReadingValue.toStringAsFixed(2)}m³',
-                          fontSize: 18,
-                          color: const Color.fromARGB(255, 36, 36, 36),
-                        ),
-                        leading: const Icon(
-                          Icons.water_damage,
-                          color: Colors.blue,
-                          size: 50,
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      const Divider(),
-
-                      // Last Transaction and Notification Section
-                     Padding(
-  padding: const EdgeInsets.all(10.0),
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      // Last Transaction Section
-      Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          TextWidget(
-            text: 'Last Transaction:\n',
-            fontSize: 18,
-            fontFamily: 'Bold',
-            color: const Color.fromARGB(255, 70, 70, 70),
-          ),
-          const SizedBox(width: 20), // Horizontal space between the texts
-          Expanded(
-            child: TextWidget(
-              text: isPaid
-                  ? 'Payment to LUWASA Inc.\nAmount: ₱${(reading['amount'] as num).toDouble().toStringAsFixed(2)}'
-                  : 'No transactions found.',
-              fontSize: 16,
-              fontFamily: 'Medium',
-              color: const Color.fromARGB(255, 70, 70, 70),
-            ),
-          ),
-        ],
-      ),
-      const Divider(), // Divider between sections
-
-      // Notification Section
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Row(
+      return Card(
+        elevation: 2,
+        child: Column(
           children: [
-            TextWidget(
-  text: 'Notification:',
-  fontSize: 18,
-  fontFamily: 'Bold',
-  color: const Color.fromARGB(255, 70, 70, 70),
-),
-const SizedBox(width: 20),
-Expanded(
-  child: GestureDetector(
-    onTap: () {
-      // Show the text message when clicked (you can use a dialog or a bottom sheet)
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Notification'),
-            content: Text(
-              isPaid
-                  ? 'No notifications found.'
-                  : 'You have a pending ₱${(reading['amount'] as num).toDouble().toStringAsFixed(2)} for this month. Please settle this to avoid penalty fees.',
-            ),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Close the dialog
-                },
-                child: const Text('Close'),
+            const SizedBox(height: 10),
+            ListTile(
+              title: TextWidget(
+                text: 'Reading Month: $monthYear',
+                fontSize: 15,
+                fontFamily: 'Medium',
               ),
-            ],
-          );
-        },
-      );
-    },
-    child: TextWidget(
-      text: isPaid
-          ? 'No notifications found.'
-          : 'You have a pending ₱${(reading['amount'] as num).toDouble().toStringAsFixed(2)} for this month. Please settle this to avoid penalty fees.',
-      fontSize: 16,
-      fontFamily: 'Medium',
-      color: const Color.fromARGB(255, 70, 70, 70),
-                                    ),
-                                  ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+              subtitle: TextWidget(
+                text: 'Total Reading: ${waterUsed.toStringAsFixed(2)}m³\n'
+                    'Current: ${currentReadingValue.toStringAsFixed(2)}m³, '
+                    'Previous: ${previousReadingValue.toStringAsFixed(2)}m³',
+                fontSize: 18,
+                color: const Color.fromARGB(255, 36, 36, 36),
+              ),
+              leading: const Icon(
+                Icons.water_damage,
+                color: Colors.blue,
+                size: 50,
+              ),
+            ),
+            const SizedBox(height: 30),
+            const Divider(),
+
+            // Last Transaction Section
+            Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      TextWidget(
+                        text: 'Last Transaction:\n',
+                        fontSize: 18,
+                        fontFamily: 'Bold',
+                        color: const Color.fromARGB(255, 70, 70, 70),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: TextWidget(
+                          text: isPaid
+                              ? 'Payment to LUWASA Inc.\nAmount: ₱${(latestReading['amount'] as num).toDouble().toStringAsFixed(2)}'
+                              : 'No transactions found.',
+                          fontSize: 16,
+                          fontFamily: 'Medium',
+                          color: const Color.fromARGB(255, 70, 70, 70),
                         ),
                       ),
                     ],
                   ),
-                ),
-              );
-            },
-          ),
-        ],
+                  const Divider(),
+
+                  // Notification Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Row(
+                      children: [
+                        TextWidget(
+                          text: 'Notification: ',
+                          fontSize: 18,
+                          fontFamily: 'Bold',
+                          color: const Color.fromARGB(255, 70, 70, 70),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              // Show the text message when clicked (dialog or bottom sheet)
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: const Text('Notification'),
+                                    content: Text(
+                                      isPaid
+                                          ? 'No notifications found.'
+                                          : 'You have a pending ₱${(latestReading['amount'] as num).toDouble().toStringAsFixed(2)} for this month. Please settle this to avoid penalty fees.',
+                                    ),
+                                    actions: <Widget>[
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop(); // Close the dialog
+                                        },
+                                        child: const Text('Close'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                            child: TextWidget(
+                              text: isPaid
+                                  ? 'No notifications found.'
+                                  : 'You have a pending ₱${(latestReading['amount'] as num).toDouble().toStringAsFixed(2)} for this month. Please settle this to avoid penalty fees.',
+                              fontSize: 16,
+                              fontFamily: 'Medium',
+                              color: const Color.fromARGB(255, 70, 70, 70),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       );
     },
   );
 }
+
 
 
   // Payment Integration with PayMongo
