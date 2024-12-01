@@ -144,7 +144,7 @@ class TransactionTab extends StatelessWidget {
             ],
           ),
           trailing: TextWidget(
-            text: '-₱${doc['amount']}.00',
+            text: '-₱${doc['totalAmountDue']}.00',
             fontSize: 12,
             color: Colors.red,
           ),
@@ -175,13 +175,15 @@ class TransactionTab extends StatelessWidget {
               const Divider(color: Colors.grey),
               const SizedBox(height: 10),
               _buildDetailRow('Meter', '${doc['meterid']}'),
-              _buildDetailRow('Amount', '-₱${doc['amount']}.00'),
+              _buildDetailRow('Penalty', '₱${doc['penalty']}'),
+              _buildDetailRow('Total Amount', '-₱${doc['totalAmountDue']}.00'),
+              _buildDetailRow('Usage', '${doc['waterUsed']} m³'),
+              _buildDetailRow('Invoice #', doc['invoiceNumber'].toString()),
+               const Divider(color: Colors.grey),
               _buildDetailRow(
                 'Date',
                 DateFormat.yMMMd().add_jm().format(doc['date'].toDate()),
               ),
-              _buildDetailRow('Usage', '${doc['waterUsed']} m³'),
-              _buildDetailRow('Invoice #', doc['invoiceNumber'].toString()),
             ],
           ),
         );

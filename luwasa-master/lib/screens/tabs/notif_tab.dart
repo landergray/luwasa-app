@@ -130,7 +130,7 @@ class NotifTab extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         TextWidget(
-                          text: 'Payment: ₱${data.docs[index]['amount']}',
+                          text: 'Payment: ₱${data.docs[index]['totalAmountDue']}',
                           fontSize: 18,
                         ),
                         TextWidget(
@@ -206,7 +206,8 @@ class NotifTab extends StatelessWidget {
   // Calculate the due date: 22nd of the current month
   DateFormat.yMMMd().format(DateTime(DateTime.now().year, DateTime.now().month + 1, 30)),
 ),
-            _buildDetailRow('Amount', '₱${(doc['amount'] is int ? (doc['amount'] as int).toDouble() : doc['amount']).toStringAsFixed(2)}'),
+_buildDetailRow('Penalty', '₱${doc['penalty']}'),
+            _buildDetailRow('Total Amount', '₱${(doc['totalAmountDue'] is int ? (doc['totalAmountDue'] as int).toDouble() : doc['totalAmountDue']).toStringAsFixed(2)}'),
 
             const Divider(color: Colors.grey),
             _buildDetailRow('Company', 'LUWASA INC.'),

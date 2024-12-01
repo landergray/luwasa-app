@@ -175,7 +175,7 @@ class HomeTab extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _billingDetails(payment),
-                _payNowButton(context, payment.id, (payment['amount'] as num).toDouble()),
+                _payNowButton(context, payment.id, (payment['totalAmountDue'] as num).toDouble()),
               ],
             ),
           ),
@@ -236,7 +236,7 @@ Widget _billingDetailsWithNoData() {
           color: const Color.fromARGB(255, 5, 5, 5),
         ),
         TextWidget(
-          text: '₱${payment['amount']}.00',
+          text: '₱${payment['totalAmountDue']}.00',
           fontSize: 48,
           color: const Color.fromARGB(255, 39, 39, 39),
           fontFamily: 'Medium',
@@ -377,7 +377,7 @@ Widget _buildWaterUsed() {
                       Expanded(
                         child: TextWidget(
                           text: isPaid
-                              ? 'Payment to LUWASA Inc.\nAmount: ₱${(latestReading['amount'] as num).toDouble().toStringAsFixed(2)}'
+                              ? 'Payment to LUWASA Inc.\nAmount: ₱${(latestReading['totalAmountDue'] as num).toDouble().toStringAsFixed(2)}'
                               : 'No transactions found.',
                           fontSize: 16,
                           fontFamily: 'Medium',
@@ -412,7 +412,7 @@ Widget _buildWaterUsed() {
                                     content: Text(
                                       isPaid
                                           ? 'No notifications found.'
-                                          : 'You have a pending ₱${(latestReading['amount'] as num).toDouble().toStringAsFixed(2)} for this month. Please settle this to avoid penalty fees.',
+                                          : 'You have a pending ₱${(latestReading['totalAmountDue'] as num).toDouble().toStringAsFixed(2)} for this month. Please settle this to avoid penalty fees.',
                                     ),
                                     actions: <Widget>[
                                       TextButton(
@@ -429,7 +429,7 @@ Widget _buildWaterUsed() {
                             child: TextWidget(
                               text: isPaid
                                   ? 'No notifications found.'
-                                  : 'You have a pending ₱${(latestReading['amount'] as num).toDouble().toStringAsFixed(2)} for this month. Please settle this to avoid penalty fees.',
+                                  : 'You have a pending ₱${(latestReading['totalAmountDue'] as num).toDouble().toStringAsFixed(2)} for this month. Please settle this to avoid penalty fees.',
                               fontSize: 16,
                               fontFamily: 'Medium',
                               color: const Color.fromARGB(255, 70, 70, 70),
