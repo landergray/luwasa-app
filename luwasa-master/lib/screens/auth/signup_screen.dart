@@ -7,6 +7,8 @@ import 'package:alert_system/widgets/textfield_widget.dart';
 import 'package:alert_system/widgets/toast_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -18,12 +20,14 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   final email = TextEditingController();
   final password = TextEditingController();
+  final confirmPassword = TextEditingController(); // Controller for confirm password
   final name = TextEditingController();
   final number = TextEditingController();
   final houseno = TextEditingController();
   final brgy = TextEditingController();
   final meterid = TextEditingController();
-   bool _agreeToTerms = false;
+  final dobController = TextEditingController(); // Controller for Date of Birth
+  bool _agreeToTerms = false;
 
   void _showTermsDialog() {
     showDialog(
@@ -120,9 +124,7 @@ luwasinc00@gmail.com
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(
-                  height: 25,
-                ),
+                const SizedBox(height: 25),
                 const Text(
                   'Signup',
                   textAlign: TextAlign.center,
@@ -132,6 +134,8 @@ luwasinc00@gmail.com
                   ),
                 ),
                 const SizedBox(height: 10),
+                
+                // Fullname Text Field
                 TextFieldWidget(
                   hasValidator: false,
                   hint: 'Enter fullname',
@@ -140,13 +144,14 @@ luwasinc00@gmail.com
                   controller: name,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter a email';
+                      return 'Please enter a fullname';
                     }
-
                     return null;
                   },
                 ),
                 const SizedBox(height: 10),
+                
+                // Contact Number Text Field
                 TextFieldWidget(
                   inputType: TextInputType.number,
                   hasValidator: false,
@@ -156,13 +161,14 @@ luwasinc00@gmail.com
                   controller: number,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter a email';
+                      return 'Please enter a contact number';
                     }
-
                     return null;
                   },
                 ),
                 const SizedBox(height: 10),
+                
+                // House Number Text Field
                 TextFieldWidget(
                   hasValidator: false,
                   hint: 'Enter House Number',
@@ -173,26 +179,28 @@ luwasinc00@gmail.com
                     if (value == null || value.isEmpty) {
                       return 'Please enter a house number';
                     }
-
                     return null;
                   },
                 ),
                 const SizedBox(height: 10),
+                
+                // Barangay Text Field
                 TextFieldWidget(
                   hasValidator: false,
-                  hint: 'Enter Baranggay',
+                  hint: 'Enter Barangay',
                   borderColor: Colors.grey,
-                  label: 'Baranggay',
+                  label: 'Barangay',
                   controller: brgy,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter a Baranggay';
+                      return 'Please enter a Barangay';
                     }
-
                     return null;
                   },
                 ),
                 const SizedBox(height: 10),
+                
+                // Meter ID Text Field
                 TextFieldWidget(
                   hasValidator: false,
                   hint: 'Enter Meter ID',
@@ -203,11 +211,25 @@ luwasinc00@gmail.com
                     if (value == null || value.isEmpty) {
                       return 'Please enter your Meter ID';
                     }
-
                     return null;
                   },
                 ),
                 const SizedBox(height: 10),
+                TextFieldWidget(
+                  hasValidator: false,
+                  hint: '(MM/DD/YYYY)',
+                  borderColor: Colors.grey,
+                  label: 'Date of Birth',
+                  controller: dobController,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your Date of Birth';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 10),
+                // Email Text Field
                 TextFieldWidget(
                   hasValidator: false,
                   hint: 'Enter email',
@@ -216,66 +238,90 @@ luwasinc00@gmail.com
                   controller: email,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter a email';
+                      return 'Please enter an email';
                     }
-
                     return null;
                   },
                 ),
                 const SizedBox(height: 10),
-                Column(
+                
+                // Date of Birth Text Field
+                
+                
+                // Password Text Field
+                TextFieldWidget(
+                  hasValidator: false,
+                  hint: 'Enter password',
+                  showEye: true,
+                  borderColor: Colors.grey,
+                  label: 'Password',
+                  isObscure: true,
+                  controller: password,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a password';
+                    }
+                    if (value.length < 8) {
+                      return 'Password must be at least 8 characters long';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 10),
+                
+                // Confirm Password Text Field
+                TextFieldWidget(
+                  hasValidator: false,
+                  hint: 'Confirm password',
+                  showEye: true,
+                  borderColor: Colors.grey,
+                  label: 'Confirm Password',
+                  isObscure: true,
+                  controller: confirmPassword,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please confirm your password';
+                    }
+                    if (value != password.text) {
+                      return 'Passwords do not match';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 30),
+                
+                // Terms and Conditions Checkbox
+                Row(
                   children: [
-                    TextFieldWidget(
-                      hasValidator: false,
-                      hint: 'Enter password',
-                      showEye: true,
-                      borderColor: Colors.grey,
-                      label: 'Password',
-                      isObscure: true,
-                      controller: password,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a password';
-                        }
-                        if (value.length < 8) {
-                          return 'Password must be at least 8 characters long';
-                        }
-
-                        return null;
+                    Checkbox(
+                      value: _agreeToTerms,
+                      onChanged: (bool? newValue) {
+                        setState(() {
+                          _agreeToTerms = newValue!;
+                        });
                       },
+                    ),
+                    const Expanded(
+                      child: Text(
+                        'I agree to the Terms and Conditions.',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _showTermsDialog, // Show terms in a dialog when clicked
+                      child: const Text(
+                        'View Terms',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.blue,  // Change color to blue for a clickable link style
+                        ),
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 30),
-                Row(
-  children: [
-    Checkbox(
-      value: _agreeToTerms,
-      onChanged: (bool? newValue) {
-        setState(() {
-          _agreeToTerms = newValue!;
-        });
-      },
-    ),
-    const Expanded(
-      child: Text(
-        'I agree to the Terms and Conditions.',
-        style: TextStyle(fontSize: 14),
-      ),
-    ),
-    TextButton(
-      onPressed: _showTermsDialog,  // Show terms in a dialog when clicked
-      child: const Text(
-        'View Terms',
-        style: TextStyle(
-          fontSize: 14,
-          color: Colors.blue,  // Change color to blue for a clickable link style
-        ),
-      ),
-    ),
-  ],
-),
-                const SizedBox(height: 30),
+                
+                // Register Button
                 ButtonWidget(
                   label: 'Register',
                   onPressed: () {
@@ -287,6 +333,8 @@ luwasinc00@gmail.com
                   },
                 ),
                 const SizedBox(height: 10),
+                
+                // Already have an account?
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -304,7 +352,7 @@ luwasinc00@gmail.com
                         text: "Login",
                         fontSize: 12,
                       ),
-                    )
+                    ),
                   ],
                 ),
                 const SizedBox(height: 25),
@@ -317,34 +365,50 @@ luwasinc00@gmail.com
   }
 
   register(context) async {
-    try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: email.text, password: password.text);
+  try {
+    // Create the user with email and password
+    UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      email: email.text, 
+      password: password.text
+    );
 
-      addUser(name.text, email.text, number.text, houseno.text, meterid.text,
-          brgy.text);
+    // Get the user ID from FirebaseAuth
+    String userId = userCredential.user!.uid;
 
-      // signup(nameController.text, numberController.text, addressController.text,
-      //     emailController.text);
+    // Parse the date from the dobController.text input using DateFormat
+    DateTime dob = DateFormat('MM/dd/yyyy').parse(dobController.text);
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
-      showToast("Registered Successfully!");
+    // Pass userId and dob to addUser
+    await addUser(
+      name.text,
+      email.text,
+      number.text,
+      houseno.text,
+      meterid.text,
+      brgy.text,
+      userId,  // Pass the userId here
+      dob,  // Pass the parsed DateTime here
+    );
 
-      Navigator.pop(context);
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'weak-password') {
-        showToast('The password provided is too weak.');
-      } else if (e.code == 'email-already-in-use') {
-        showToast('The account already exists for that email.');
-      } else if (e.code == 'invalid-email') {
-        showToast('The email address is not valid.');
-      } else {
-        showToast(e.toString());
-      }
-    } on Exception catch (e) {
-      showToast("An error occurred: $e");
+    // Navigate to login screen after successful registration
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+    );
+    showToast("Registered Successfully!");
+
+    Navigator.pop(context);
+  } on FirebaseAuthException catch (e) {
+    if (e.code == 'weak-password') {
+      showToast('The password provided is too weak.');
+    } else if (e.code == 'email-already-in-use') {
+      showToast('The account already exists for that email.');
+    } else if (e.code == 'invalid-email') {
+      showToast('The email address is not valid.');
+    } else {
+      showToast(e.toString());
     }
+  } on Exception catch (e) {
+    showToast("An error occurred: $e");
   }
+}
 }

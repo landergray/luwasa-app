@@ -5,17 +5,78 @@ import 'package:alert_system/widgets/logout_widget.dart';
 import 'package:alert_system/widgets/touchable_opacity.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart'; // Add image_picker import
+import 'package:firebase_storage/firebase_storage.dart'; // Add firebase_storage import
+import 'dart:io'; // Add for File handling
 
 import '../../utils/colors.dart';
 import '../../widgets/text_widget.dart';
 
-class ProfileTab extends StatelessWidget {
+class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
+
+  @override
+  _ProfileTabState createState() => _ProfileTabState();
+}
+
+class _ProfileTabState extends State<ProfileTab> {
+  String userProfileUrl = ''; // To store the profile image URL
+
+  // Function to pick an image from gallery
+  Future<void> pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? pickedImage = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedImage != null) {
+      // Upload the image to Firebase Storage
+      String? uploadedImageUrl = await uploadImageToStorage(pickedImage);
+      if (uploadedImageUrl != null) {
+        // Update the Firestore profile URL
+        updateUserProfile(uploadedImageUrl);
+      }
+    }
+  }
+
+  // Function to upload the image to Firebase Storage
+  Future<String?> uploadImageToStorage(XFile image) async {
+    try {
+      FirebaseStorage storage = FirebaseStorage.instance;
+      String filePath = 'user_profiles/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      File file = File(image.path);
+      
+      // Upload file to Firebase Storage
+      await storage.ref(filePath).putFile(file);
+      String downloadUrl = await storage.ref(filePath).getDownloadURL();
+
+      return downloadUrl; // Return the download URL
+    } catch (e) {
+      print("Error uploading image: $e");
+      return null;
+    }
+  }
+
+  // Function to update user profile in Firestore
+  Future<void> updateUserProfile(String profileUrl) async {
+    try {
+      DocumentReference userDoc = FirebaseFirestore.instance.collection('Users').doc(userId);
+      await userDoc.update({
+        'profile': profileUrl, // Update profile URL in Firestore
+      });
+
+      // Update the state to reflect the new profile URL
+      setState(() {
+        userProfileUrl = profileUrl;
+      });
+    } catch (e) {
+      print("Error updating profile: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final Stream<DocumentSnapshot> userData =
         FirebaseFirestore.instance.collection('Users').doc(userId).snapshots();
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 206, 235, 240),
       body: StreamBuilder<DocumentSnapshot>(
@@ -29,33 +90,43 @@ class ProfileTab extends StatelessWidget {
               return const Drawer();
             }
             dynamic data = snapshot.data;
+
+            // If profile URL is available, use it; otherwise, use a default avatar
+            String avatarUrl = userProfileUrl.isNotEmpty ? userProfileUrl : data['profile'];
+
             return SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(
-                    height: 20,
-                  ),
+                  const SizedBox(height: 20),
                   Center(
                     child: Stack(
                       children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: secondary,
+                        GestureDetector(
+                          onTap: pickImage, // Open image picker on avatar tap
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: secondary,
+                              ),
                             ),
-                          ),
-                          child: const Padding(
-                            padding: EdgeInsets.all(5.0),
-                            child: CircleAvatar(
-                              backgroundColor: primary,
-                              minRadius: 75,
-                              maxRadius: 75,
-                              child: Icon(
-                                Icons.person,
-                                size: 80,
-                                color: Colors.white,
+                            child: Padding(
+                              padding: const EdgeInsets.all(5.0),
+                              child: CircleAvatar(
+                                backgroundColor: primary,
+                                minRadius: 75,
+                                maxRadius: 75,
+                                backgroundImage: avatarUrl.isNotEmpty
+                                    ? NetworkImage(avatarUrl)
+                                    : null, // Display user's avatar if available
+                                child: avatarUrl.isEmpty
+                                    ? const Icon(
+                                        Icons.person,
+                                        size: 80,
+                                        color: Colors.white,
+                                      )
+                                    : null,
                               ),
                             ),
                           ),
@@ -71,7 +142,7 @@ class ProfileTab extends StatelessWidget {
                       fontFamily: 'Bold',
                     ),
                   ),
-                  const SizedBox(
+                 const SizedBox(
                     height: 10,
                   ),
                   TouchableOpacity(
@@ -103,54 +174,76 @@ class ProfileTab extends StatelessWidget {
                   const SizedBox(
                     height: 10,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 30),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        TextWidget(
-                          text: 'EMAIL ADDRESS',
-                          fontSize: 10,
-                          color: secondary,
-                          fontFamily: 'Regular',
-                        ),
-                        const SizedBox(
-                          width: 120,
-                        ),
-                        TextWidget(
-                          text: 'MOBILE NUMBER',
-                          fontSize: 10,
-                          color: secondary,
-                          fontFamily: 'Regular',
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 30),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                       
-                        TextWidget(
-                          text: data['email'],
-                          fontSize: 14,
-                          color: secondary,
-                          fontFamily: 'Medium',
-                        ),
-                        const SizedBox(
-                          width: 25,
-                        ),
-                        TextWidget(
-                          text:
-                              '\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t${data['number']}',
-                          fontSize: 14,
-                          color: secondary,
-                          fontFamily: 'Medium',
-                        ),
-                      ],
-                    ),
-                  ),
+                 Padding(
+  padding: const EdgeInsets.only(left: 30),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.start,
+    children: [
+      TextWidget(
+        text: 'EMAIL ADDRESS',
+        fontSize: 10,
+        color: secondary,
+        fontFamily: 'Regular',
+      ),
+    ],
+  ),
+),
+Padding(
+  padding: const EdgeInsets.only(left: 30),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.start,
+    children: [
+      TextWidget(
+        text: data['email'],
+        fontSize: 14,
+        color: secondary,
+        fontFamily: 'Medium',
+      ),
+    ],
+  ),
+),
+const Padding(
+  padding: EdgeInsets.only(left: 30, right: 30),
+  child: Divider(
+    color: secondary, // Divider color, you can customize
+  ),
+),
+
+
+const SizedBox(
+  height: 10, // Adds space between email and mobile number
+),
+Padding(
+  
+  padding: const EdgeInsets.only(left: 30),
+  
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.start,
+    children: [
+      TextWidget(
+        text: 'MOBILE NUMBER',
+        fontSize: 10,
+        color: secondary,
+        fontFamily: 'Regular',
+      ),
+    ],
+  ),
+),
+Padding(
+  padding: const EdgeInsets.only(left: 30),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.start,
+    children: [
+      TextWidget(
+        text: data['number'],
+        fontSize: 14,
+        color: secondary,
+        fontFamily: 'Medium',
+      ),
+    ],
+  ),
+),
+
                   
                   const Padding(
                     padding: EdgeInsets.only(left: 30, right: 30),
@@ -235,7 +328,7 @@ class ProfileTab extends StatelessWidget {
                   const SizedBox(
                     height: 30,
                   ),
-                  TouchableOpacity(
+                TouchableOpacity(
                     onTap: () {
                       showPrivacy(context, 'Privacy Policy', '''
           Types of Data Collected
@@ -488,48 +581,6 @@ class ProfileTab extends StatelessWidget {
                   const SizedBox(
                     height: 20,
                   ),
-                  // SizedBox(
-                  //   height: 375,
-                  //   child: SingleChildScrollView(
-                  //     child: Column(
-                  //       children: [
-                  //         for (int i = 0; i < 10; i++)
-                  //           Padding(
-                  //             padding: const EdgeInsets.only(bottom: 15),
-                  //             child: Container(
-                  //               width: 320,
-                  //               height: 65,
-                  //               decoration: BoxDecoration(
-                  //                 color: secondary,
-                  //                 borderRadius: BorderRadius.circular(
-                  //                   20,
-                  //                 ),
-                  //               ),
-                  //               child: Row(
-                  //                 mainAxisAlignment: MainAxisAlignment.start,
-                  //                 children: [
-                  //                   Image.asset(
-                  //                     'assets/images/Rectangle 40.png',
-                  //                     height: double.infinity,
-                  //                     width: 120,
-                  //                   ),
-                  //                   const SizedBox(
-                  //                     width: 10,
-                  //                   ),
-                  //                   TextWidget(
-                  //                     text: 'Bluebird Coffee',
-                  //                     fontSize: 20,
-                  //                     color: Colors.white,
-                  //                     fontFamily: 'Bold',
-                  //                   ),
-                  //                 ],
-                  //               ),
-                  //             ),
-                  //           ),
-                  //       ],
-                  //     ),
-                  //   ),
-                  // ),
                   const SizedBox(
                     height: 20,
                   ),

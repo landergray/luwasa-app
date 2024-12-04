@@ -38,7 +38,7 @@ class NotifTab extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             // Past Notifications Section
-            _buildSectionTitle('Past'),
+            _buildSectionTitle('History'),
             const SizedBox(height: 10),
             _buildNotificationList(
               query: FirebaseFirestore.instance

@@ -283,6 +283,7 @@ Widget _billingDetailsWithNoData() {
   }
 
   // Merged Water Used List and Last Transaction Card
+// Merged Water Used List and Last Transaction Card
 Widget _buildWaterUsed() {
   final user = FirebaseAuth.instance.currentUser;
   if (user == null) {
@@ -337,17 +338,29 @@ Widget _buildWaterUsed() {
           children: [
             const SizedBox(height: 10),
             ListTile(
-              title: TextWidget(
-                text: 'Reading Month: $monthYear',
-                fontSize: 15,
-                fontFamily: 'Medium',
+              title: GestureDetector(
+                onTap: () {
+                  // Display water usage details when tapped
+                  _showWaterUsageDialog(context, monthYear, currentReadingValue, previousReadingValue, waterUsed);
+                },
+                child: TextWidget(
+                  text: 'Reading Month: $monthYear',
+                  fontSize: 15,
+                  fontFamily: 'Medium',
+                ),
               ),
-              subtitle: TextWidget(
-                text: 'Total Reading: ${waterUsed.toStringAsFixed(2)}m³\n'
-                    'Current: ${currentReadingValue.toStringAsFixed(2)}m³, '
-                    'Previous: ${previousReadingValue.toStringAsFixed(2)}m³',
-                fontSize: 18,
-                color: const Color.fromARGB(255, 36, 36, 36),
+              subtitle: GestureDetector(
+                onTap: () {
+                  // Display water usage details when tapped
+                  _showWaterUsageDialog(context, monthYear, currentReadingValue, previousReadingValue, waterUsed);
+                },
+                child: TextWidget(
+                  text: 'Total Reading: ${waterUsed.toStringAsFixed(2)}m³\n'
+                      'Current: ${currentReadingValue.toStringAsFixed(2)}m³, '
+                      'Previous: ${previousReadingValue.toStringAsFixed(2)}m³',
+                  fontSize: 18,
+                  color: const Color.fromARGB(255, 36, 36, 36),
+                ),
               ),
               leading: const Icon(
                 Icons.water_damage,
@@ -367,21 +380,33 @@ Widget _buildWaterUsed() {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      TextWidget(
-                        text: 'Last Transaction:\n',
-                        fontSize: 18,
-                        fontFamily: 'Bold',
-                        color: const Color.fromARGB(255, 70, 70, 70),
+                      GestureDetector(
+                        onTap: () {
+                          // Display transaction details when tapped
+                          _showTransactionDialog(context, latestReading, isPaid);
+                        },
+                        child: TextWidget(
+                          text: 'Last Transaction:\n',
+                          fontSize: 18,
+                          fontFamily: 'Bold',
+                          color: const Color.fromARGB(255, 70, 70, 70),
+                        ),
                       ),
                       const SizedBox(width: 20),
                       Expanded(
-                        child: TextWidget(
-                          text: isPaid
-                              ? 'Payment to LUWASA Inc.\nAmount: ₱${(latestReading['totalAmountDue'] as num).toDouble().toStringAsFixed(2)}'
-                              : 'No transactions found.',
-                          fontSize: 16,
-                          fontFamily: 'Medium',
-                          color: const Color.fromARGB(255, 70, 70, 70),
+                        child: GestureDetector(
+                          onTap: () {
+                            // Display transaction details when tapped
+                            _showTransactionDialog(context, latestReading, isPaid);
+                          },
+                          child: TextWidget(
+                            text: isPaid
+                                ? 'Payment to LUWASA Inc.\nAmount: ₱${(latestReading['totalAmountDue'] as num).toDouble().toStringAsFixed(2)}'
+                                : 'No transactions found.',
+                            fontSize: 16,
+                            fontFamily: 'Medium',
+                            color: const Color.fromARGB(255, 70, 70, 70),
+                          ),
                         ),
                       ),
                     ],
@@ -444,6 +469,57 @@ Widget _buildWaterUsed() {
             ),
           ],
         ),
+      );
+    },
+  );
+}
+
+// Show dialog for water usage details
+void _showWaterUsageDialog(BuildContext context, String monthYear, double currentReading, double previousReading, double waterUsed) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Water Usage Details'),
+        content: Text(
+          'Reading Month: $monthYear\n'
+          'Current Reading: ${currentReading.toStringAsFixed(2)} m³\n'
+          'Previous Reading: ${previousReading.toStringAsFixed(2)} m³\n'
+          'Water Used: ${waterUsed.toStringAsFixed(2)} m³',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close the dialog
+            },
+            child: const Text('Close'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+// Show dialog for transaction details
+void _showTransactionDialog(BuildContext context, DocumentSnapshot latestReading, bool isPaid) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Transaction Details'),
+        content: Text(
+          isPaid
+              ? 'Payment to LUWASA Inc.\nAmount: ₱${(latestReading['totalAmountDue'] as num).toDouble().toStringAsFixed(2)}'
+              : 'No transactions found.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close the dialog
+            },
+            child: const Text('Close'),
+          ),
+        ],
       );
     },
   );

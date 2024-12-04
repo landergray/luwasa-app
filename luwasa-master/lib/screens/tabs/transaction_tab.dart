@@ -29,7 +29,7 @@ class TransactionTab extends StatelessWidget {
               const SizedBox(height: 10),
               _buildTransactionList(isToday: true, emptyMessage: 'No transactions for today.'),
               const SizedBox(height: 10),
-              _buildSectionTitle('Past'),
+              _buildSectionTitle('History'),
               const SizedBox(height: 10),
               _buildTransactionList(isToday: false, emptyMessage: 'No past transactions.'),
             ],
